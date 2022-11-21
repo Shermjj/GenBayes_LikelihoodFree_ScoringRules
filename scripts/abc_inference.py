@@ -1,3 +1,6 @@
+import sys, os
+sys.path.append('/home/anyata/docs/coding/GenBayes_LikelihoodFree_ScoringRules')
+
 import argparse
 import logging
 from time import time

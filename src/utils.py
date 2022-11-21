@@ -115,7 +115,8 @@ def define_default_folders():
                            "MG1": "results/MG1",
                            "normal_location_misspec": "results/normal_location_misspec",
                            "RecruitmentBoomBust": "results/RecruitmentBoomBust",
-                           "Lorenz96": "results/Lorenz96"}
+                           "Lorenz96": "results/Lorenz96",
+                           "SimpLorenz96": "results/SimpLorenz96"}
 
     return default_root_folder
 

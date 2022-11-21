@@ -8,6 +8,9 @@ from scipy.stats import moment, multivariate_normal, skew, kurtosis  # kurtosis 
 from statsmodels.tsa.arima_process import arma_generate_sample
 
 from src.utils import define_exact_param_values, transform_R_to_theta_MA2
+import torch
+import torchsde
+from einops import rearrange
 
 
 def ma2_log_lik_for_mcmc(theta, x_obs):
@@ -812,6 +815,116 @@ class StochLorenz96(ProbabilisticModel, Continuous):
         # Return the solved timeseries at the values in timespan
         return timeseries
 
+class SimpLorenz96(ProbabilisticModel, Continuous):
+    """
+    """
+
+    def __init__(self, parameters, transformer=None, name:str='Lorenz96SDE', seed:int=42, simulation_method='euler', ts=torch.linspace(0, 1.5, 21)):
+        self.seed = seed
+        self.param_dim = 3
+        self.ts = ts
+        self.simulation_method = simulation_method
+
+        self.transformer = transformer
+
+        if len(parameters) != self.param_dim:
+            raise TypeError("Parameter is of wrong dim!")
+
+        input_parameters = InputConnector.from_list(parameters)
+        super(SimpLorenz96, self).__init__(input_parameters, name)
+
+    def get_grads(self):
+        #for param in self.model.parameters():
+        #    if torch.isnan(param.grad).any():
+        #        print("NAN gradient")
+        #        return torch.tensor([0.0 for _ in range(self.param_dim)])
+        #print([p.grad for p in self.model.parameters()])
+
+        return torch.tensor([p.grad.detach() for p in self.model.parameters()])
+
+    def forward_simulate(self, input_values, num_forward_simulations,rng=np.random.RandomState()):
+        # Only implemented for legacy API in w estimation
+        # Does not store grads!
+        # Use torch_forward_simulate
+        sims = self.torch_forward_simulate(torch.tensor(input_values), num_forward_simulations)
+
+        return [item.detach().numpy() for item in sims]
+
+    def torch_forward_simulate(self, parameters, num_forward_simulations: int):
+        torch.manual_seed(self.seed)
+
+        batch_size = num_forward_simulations
+        self.model = torch_lorenz96(*parameters)
+        y0 = torch.tensor([6.4558, 1.1054, -1.4502, -0.1985, 1.1905, 2.3887, 5.6689, 6.7284])
+        y0 = y0.repeat(batch_size, 1)
+        ys = torchsde.sdeint(self.model, y0, self.ts, method=self.simulation_method)[1:]  # ys will have shape (t_size, batch_size, state_size)
+        ys = rearrange(ys, 't b d -> b (t d)')  # in this way return 1d arrays as outputs
+
+        self.seed += 1
+        return ys
+
+
+    def zero_grad(self):
+        self.model.zero_grad()
+
+    def get_output_dimension(self):
+        return 160  # 8 * 20
+
+    def _check_input(self, input_values):
+        """
+        """
+        if len(input_values) != 3:
+            raise ValueError('Number of parameters of SimpLorenz96 model must be 3.')
+
+        # Check whether input is from correct domain
+        theta1 = input_values[0]
+        theta2 = input_values[1]
+        sigma_e = input_values[2]
+
+        if sigma_e < 0:
+            return False
+
+        return True
+
+    def _check_output(self, values):
+        return True
+
+class torch_lorenz96(torch.nn.Module):
+    def __init__(self, b0, b1, sigma):
+        super().__init__()
+        self.b0 = torch.nn.Parameter(b0)
+        self.b1 =  torch.nn.Parameter(b1)
+        self.sigma = torch.nn.Parameter(sigma)
+
+        self.noise_type = "diagonal"
+        self.sde_type = "ito"
+
+    def _torch_l96(self, x, f):
+
+        """"
+        takes an input a tensor x of shape (batch_size, shape_size/param_size) 
+        This computes the time derivative for the non-linear deterministic Lorenz 96 Model of arbitrary dimension n.
+        dx/dt = f(x) 
+        """
+
+        # shift minus and plus indices
+        x_m_2 = torch.cat([x[:,-2:], x[:,:-2]],1)
+        #print(x_m_2)
+        x_m_1 = torch.cat([x[:,-1:], x[:,:-1]],1)
+        #print(x_m_1)
+        x_p_1 = torch.cat((x[:,1:], x[:,0:1]),1)
+        #print(x_p_1)
+
+        dxdt = (x_p_1-x_m_2)*x_m_1 - x + f
+
+        return dxdt
+
+    def f(self, t, y):
+        return self._torch_l96(y,torch.tensor(10)) - self.b0 - self.b1 * y 
+    
+    def g(self, t, y):
+        return self.sigma * torch.ones(y.size())
+
 
 class LorenzLargerStatistics(Statistics):
 
@@ -1178,6 +1291,20 @@ def instantiate_model(model_name, reparametrized=True, **kwargs):
 
         param_bounds = {'r': [0, 1], 'kappa': [10, 80], 'alpha': [0, 1], 'beta': [0, 1]}
 
+    elif "SimpLorenz96" in model_name:
+        theta1_min = 1.4
+        theta1_max = 2.2
+        theta2_min = 0
+        theta2_max = 1
+        sigma_e_min = 1.5
+        sigma_e_max = 2.5
+
+        theta1 = Uniform([[theta1_min], [theta1_max]], name='theta1')
+        theta2 = Uniform([[theta2_min], [theta2_max]], name='theta2')
+        sigma_e = Uniform([[sigma_e_min], [sigma_e_max]], name='sigma_e')
+        model = SimpLorenz96([theta1, theta2, sigma_e],  name='simpl96')
+        param_bounds = {'theta1': [theta1_min, theta1_max], 'theta2': [theta2_min, theta2_max], 'sigma_e': [sigma_e_min, sigma_e_max]}
+        
     elif "Lorenz96" in model_name:
         theta1_min = 1.4
         theta1_max = 2.2
