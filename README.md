@@ -28,6 +28,11 @@ Additionally, running:
 reproduces all experiments by calling the different bash scripts. 
 
 The scripts work on a single core. However, runnning everything on one single core can be slow; parallelization can be used to run different inferences at the same time and thus reducing computing time. 
+
+## New Experiments
+Run 
+    ./scripts/run_simpl96.sh
+to run the updated lorenz96 experiments with ABC
     
 ### Requirements
 The inference routines with the Scoring Rules are implemented using the [`ABCpy` Python package](https://github.com/eth-cscs/abcpy).

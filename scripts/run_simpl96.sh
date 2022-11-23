@@ -6,7 +6,7 @@ observation_folder=observations
 # ABC inference:
 ABC_inference_folder=ABC_inference
 ABC_method=ABC
-ABC_n_samples=1000 #impt
+ABC_n_samples=1000 
 ABC_n_samples_per_param=10
 ABC_steps=25
 n_samples_in_obs=1
