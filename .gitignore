@@ -8,7 +8,6 @@
 /httpRequests/
 .idea/
 slurm
-results/
 __pycache__/
 
 results_old/
