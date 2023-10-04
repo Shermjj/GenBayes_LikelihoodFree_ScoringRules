@@ -13,6 +13,7 @@ for i in {1..10}
 do
         echo "RUNNING EXPERIMENT ${i}"
         FOLDER="results/${model}_${i}/"
+        mkdir results/${model}_${i}/ABC_inference
         python scripts/abc_inference.py \
                 $model  \
                 $ABC_method  \
