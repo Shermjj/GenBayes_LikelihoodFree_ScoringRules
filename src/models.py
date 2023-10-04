@@ -855,8 +855,12 @@ class SimpLorenz96(ProbabilisticModel, Continuous):
 
         batch_size = num_forward_simulations
         self.model = torch_lorenz96(*parameters)
+
+        # Simulated from using initial condition y0
         y0 = torch.tensor([6.4558, 1.1054, -1.4502, -0.1985, 1.1905, 2.3887, 5.6689, 6.7284])
         y0 = y0.repeat(batch_size, 1)
+
+        # Do not use first time point
         ys = torchsde.sdeint(self.model, y0, self.ts, method=self.simulation_method)[1:]  # ys will have shape (t_size, batch_size, state_size)
         ys = rearrange(ys, 't b d -> b (t d)')  # in this way return 1d arrays as outputs
 
@@ -1201,6 +1205,40 @@ class RecruitmentBoomBustStatistics(Statistics):
                 kurtosis(differences, fisher=False)]
         return results
 
+class MultivariateGKStatistics(Statistics):
+    def __init__(self, moments=5, degree=5, cross=True, d=5):
+        """We compute here moments, covariances, cross covariances, autocovariances."""
+        self.number_moments = moments
+        self.degree = degree
+        self.cross = cross
+        self.d = d  # number of variables
+
+    def statistics(self, data):
+        #Get first k moments for each d = 5 dimensions
+        #So would get k x d matrix from n x d
+        # Then get polynomial expansion + cross expansion 
+        # E.g., degree = 3, cross = True
+        # Final after poly expansion is:
+        # k x (d + 3 * d + d choose 2)
+        if isinstance(data, list):
+            if np.array(data).shape == (len(data),):
+                if len(data) == 1:
+                    data = np.array(data).reshape(1, 1)
+                data = np.array(data).reshape(len(data), 1)
+            else:
+                data = np.concatenate(data).reshape(len(data), -1)
+        else:
+            raise TypeError('Input data should be of type list, but found type {}'.format(type(data)))
+
+        moments = np.zeros(shape=(self.number_moments, self.d))
+        moments[0,:] = np.mean(data, axis=0)
+        for i in range(1, self.number_moments):
+            moments[i, :] = moment(data, i+1, axis=0)
+
+        final = self._polynomial_expansion(moments)
+        return np.array(final)
+
+
 
 def instantiate_model(model_name, reparametrized=True, **kwargs):
     param_bounds = None
@@ -1240,6 +1278,7 @@ def instantiate_model(model_name, reparametrized=True, **kwargs):
 
         model = Multivariate_g_and_k([A, B, g, k, rho], **kwargs)
         param_bounds = {'A': [0, 4], 'B': [0, 4], 'g': [0, 4], 'k': [0, 4], "rho": [-rho_bound, rho_bound]}
+        statistics = MultivariateGKStatistics()
 
     elif model_name in ["univariate_g-and-k", "univariate_Cauchy_g-and-k"]:
         # prior ranges as in Jiang et al (2018) and Fujisawa et al (2020)
@@ -1304,6 +1343,7 @@ def instantiate_model(model_name, reparametrized=True, **kwargs):
         sigma_e = Uniform([[sigma_e_min], [sigma_e_max]], name='sigma_e')
         model = SimpLorenz96([theta1, theta2, sigma_e],  name='simpl96')
         param_bounds = {'theta1': [theta1_min, theta1_max], 'theta2': [theta2_min, theta2_max], 'sigma_e': [sigma_e_min, sigma_e_max]}
+        statistics = HakkarainenLorenzStatistics()
         
     elif "Lorenz96" in model_name:
         theta1_min = 1.4

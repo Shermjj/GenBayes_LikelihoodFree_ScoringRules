@@ -1,5 +1,8 @@
 import argparse
+import os
+import sys
 
+sys.path.append(os.getcwd())  # add the root of this project to python path
 from src.utils import dict_implemented_scoring_rules
 
 

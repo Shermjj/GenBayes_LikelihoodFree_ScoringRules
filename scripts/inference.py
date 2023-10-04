@@ -131,7 +131,7 @@ if method == "KernelScore":
                                                 n_samples_per_param=n_samples_per_param, return_values=["median"])
         print(f"Estimated sigma for kernel score {SR_kwargs['sigma']:.4f}; it took {time() - start:.4f} seconds")
 
-if method not in ["SyntheticLikelihood", "semiBSL"]:
+if method not in ["SyntheticLikelihood", "semiBSL", "wBSL"]:
     if estimate_w:
         # instantiate SRs for finding w
         print("Estimate w...")
@@ -150,6 +150,12 @@ if method not in ["SyntheticLikelihood", "semiBSL"]:
     scoring_rule = dict_implemented_scoring_rules()[method](statistics, weight=weight, **SR_kwargs)
 else:
     scoring_rule = dict_implemented_scoring_rules()[method](statistics, **SR_kwargs)
+
+if method == "wBSL":
+    # Need to estimate whitening matrix first for wBSL
+    # We use the true parameter values and 10 * the number of samples in dataset to estimate
+    y_cov_sim = model_abc.forward_simulate(theta_obs, n_samples_in_obs * 10)
+    scoring_rule._calculate_whitening_matrix(y_cov_sim)
 
 # define sampler_class, then perform inference
 start = time()

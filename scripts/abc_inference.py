@@ -1,3 +1,7 @@
+import sys, os
+#sys.path.append('/home/anyata/docs/coding/GenBayes_LikelihoodFree_ScoringRules')
+sys.path.append(os.getcwd())  # add the root of this project to python path
+
 import argparse
 import logging
 from time import time
@@ -88,7 +92,7 @@ else:
 
 x_obs = [x_obs[i] for i in
          range(n_samples_in_obs)]  # only keep the first n_samples_in_obs elements from the observation
-# print("Observation shape", len(x_obs), x_obs[0].shape)
+print("Observation shape", len(x_obs), x_obs[0].shape)
 
 # set up filename
 filename = inference_folder + f"{method}_n-steps_{steps}_n-samples_{n_samples}" \

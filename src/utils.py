@@ -2,7 +2,7 @@ import abcpy.statistics
 import matplotlib.pyplot as plt
 import numpy as np
 from abcpy.acceptedparametersmanager import AcceptedParametersManager
-from abcpy.approx_lhd import SynLikelihood, SemiParametricSynLikelihood
+from abcpy.approx_lhd import SynLikelihood, SemiParametricSynLikelihood, WhitenedSynLikelihood
 from abcpy.inferences import InferenceMethod
 from abcpy.output import Journal
 from scipy.stats import gaussian_kde
@@ -138,6 +138,7 @@ def define_exact_param_values():
 
 def dict_implemented_scoring_rules():
     return {"SyntheticLikelihood": SynLikelihood,
+            "wBSL" : WhitenedSynLikelihood,
             "semiBSL": SemiParametricSynLikelihood,
             "KernelScore": KernelScore,
             "EnergyScore": EnergyScore}
