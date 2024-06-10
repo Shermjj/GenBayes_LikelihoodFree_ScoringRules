@@ -6,11 +6,10 @@ model=g-and-k
 
 # set up folders:
 inference_folder=inferences
-inference_folder=inferences
 observation_folder=observations
 
 burnin=0
-n_samples=10
+n_samples=110000
 n_samples_per_param=500
 NGROUP=500
 
@@ -18,22 +17,20 @@ NGROUP=500
 
 METHODS=( SyntheticLikelihood )
 
-N_SAMPLES_IN_OBS=( 1 10 50 100 500 1000)
+N_SAMPLES_IN_OBS=( 1 5 10 )
 
-PROPSIZES_BSL=( 1 1 1 1 1 1 )
+PROPSIZES_BSL=( 1 1 1 )
 
 FOLDER=results/${model}/${inference_folder}/
+
 for ((k=0;k<${#METHODS[@]};++k)); do
 for ((k2=0;k2<${#N_SAMPLES_IN_OBS[@]};++k2)); do
-
     method=${METHODS[k]}
     n_samples_in_obs=${N_SAMPLES_IN_OBS[k2]}
 
     echo $method $n_samples_in_obs
-
-     if [[ "$method" == "SyntheticLikelihood" ]]; then
-            PROPSIZE=${PROPSIZES_BSL[k2]}
-     fi
+    
+    PROPSIZE=${PROPSIZES_BSL[k2]}
 
     python scripts/inference.py \
     $model  \

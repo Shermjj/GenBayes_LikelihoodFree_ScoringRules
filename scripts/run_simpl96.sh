@@ -9,7 +9,7 @@ ABC_method=ABC
 ABC_n_samples=1000 
 ABC_n_samples_per_param=10
 ABC_steps=25
-n_samples_in_obs=1
+n_samples_in_obs=10
 python scripts/abc_inference.py \
         $model  \
         $ABC_method  \

@@ -58,7 +58,7 @@ burnin = args.burnin
 n_samples_in_obs = args.n_samples_in_obs
 n_samples_per_param = args.n_samples_per_param
 prop_size = args.prop_size
-full_output = 0 if not args.no_full_output else 1
+full_output = 1 if not args.no_full_output else 0
 estimate_w = args.estimate_w
 weight = args.weight
 weight_file = args.weight_file
@@ -155,6 +155,7 @@ if method == "wBSL":
     # Need to estimate whitening matrix first for wBSL
     # We use the true parameter values and 10 * the number of samples in dataset to estimate
     y_cov_sim = model_abc.forward_simulate(theta_obs, n_samples_in_obs * 10)
+    y_cov_sim = statistics.statistics(y_cov_sim)
     scoring_rule._calculate_whitening_matrix(y_cov_sim)
 
 # define sampler_class, then perform inference

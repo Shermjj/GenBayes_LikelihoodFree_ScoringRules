@@ -1278,7 +1278,7 @@ def instantiate_model(model_name, reparametrized=True, **kwargs):
 
         model = Multivariate_g_and_k([A, B, g, k, rho], **kwargs)
         param_bounds = {'A': [0, 4], 'B': [0, 4], 'g': [0, 4], 'k': [0, 4], "rho": [-rho_bound, rho_bound]}
-        statistics = MultivariateGKStatistics()
+        statistics = Identity(degree=3, cross=True)
 
     elif model_name in ["univariate_g-and-k", "univariate_Cauchy_g-and-k"]:
         # prior ranges as in Jiang et al (2018) and Fujisawa et al (2020)
