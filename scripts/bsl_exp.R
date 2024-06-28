@@ -43,13 +43,10 @@ backLogTransform <- function(x_tilde, bound) {
 mvgk_sum <- function (y) 
 {
   if (is.vector(y) && !is.matrix(y)) {
-    # Convert the vector to a 1xN matrix
     y <- matrix(y, nrow = 1)
   }
   D <- ncol(y)
   N <- nrow(y)
-  #ssxRobust <- apply(y, MARGIN = 2, FUN = summStatRobust)
-  #ssxRobust <- rowMeans(ssxRobust) #This should give 4 summary stats
   ssxRobust <- summStatRobust(as.vector(y))
   if (N < 6L) {
     return(ssx = c(ssxRobust, rep(0,10)))
@@ -68,22 +65,13 @@ mvgk_sum <- function (y)
 }
 
 mvgk_sim <- function(theta, n_sim) {
-#  bounds <- rbind(cbind(0,4),
-#                  cbind(0,4),
-#                  cbind(0,4),
-#                  cbind(0,4),
-#                  cbind(-sqrt(3)/3, sqrt(3)/3))
-  
-#  theta <- backLogTransform(theta_uncon, bounds)
-  # Extract parameters from theta
   A <- theta[1]
   B <- theta[2]
   g <- theta[3]
   k <- theta[4]
   rho <- theta[5]
-  dim <- 5  # Dimension of the simulation, fixed as 5
+  dim <- 5 
   
-  # Create a covariance matrix with rho in the off-diagonal (adjacent only)
   create_cov_matrix <- function(dim, rho) {
     cov <- diag(1, dim)
     if (dim > 1 && abs(rho) > 0) {
@@ -93,14 +81,12 @@ mvgk_sim <- function(theta, n_sim) {
     return(cov)
   }
   
-  # Transform from z to g-and-k distribution values
   z_to_gk <- function(z, A, B, g, k, c) {
     term1 <- ifelse(g == 0, 1, 1 + 0.8 * tanh(g * z / 2))
     term2 <- z * (1 + z^2)^k
     return(A + B * term1 * term2)
   }
   
-  # Generate multivariate normal samples
   cov_matrix <- create_cov_matrix(dim, rho)
   z_samples <- mvrnorm(n_sim, mu = rep(0, dim), Sigma = cov_matrix)
   
@@ -108,9 +94,8 @@ mvgk_sim <- function(theta, n_sim) {
     z_samples <- t(matrix(z_samples))
   }
   results <- apply(z_samples, c(1,2), function(z_row) z_to_gk(z_row, A, B, g, k, 0.8))
-  # Apply the g-and-k transformation to each sample
   
-  return(results) #this should be an n x dim matrix (dim of output same as param dim)
+  return(results)
 }
 
 
